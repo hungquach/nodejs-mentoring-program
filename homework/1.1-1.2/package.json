@@ -1,0 +1,27 @@
+{
+  "name": "nodejs-mentoring-program",
+  "version": "1.0.0",
+  "description": "Hung's homework for the Nodejs Mentoring Program",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "task1": "nodemon task1.js",
+    "task2": "nodemon task2.js"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/hungquach/nodejs-mentoring-program.git"
+  },
+  "author": "Hung Quach",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/hungquach/nodejs-mentoring-program/issues"
+  },
+  "homepage": "https://github.com/hungquach/nodejs-mentoring-program#readme",
+  "devDependencies": {
+    "nodemon": "^2.0.7"
+  },
+  "dependencies": {
+    "csvtojson": "^2.0.10"
+  }
+}
