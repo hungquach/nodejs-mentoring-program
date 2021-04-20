@@ -1,0 +1,27 @@
+###############################################################################
+# Install dependencies & build
+###############################################################################
+FROM node:latest AS build-deps
+WORKDIR /src
+COPY . .
+# COPY package*.json /src
+RUN npm install && npm run build
+
+###############################################################################
+# Runetime deps
+###############################################################################
+FROM node:latest AS runtime-deps
+WORKDIR /build
+COPY package*.json /build/
+RUN npm install --production
+
+###############################################################################
+# Final Stage for running application
+###############################################################################
+FROM node:latest AS runtime-env
+WORKDIR /app
+COPY --from=build-deps --chown=node:node /src/build /app
+COPY --from=runtime-deps --chown=node:node /build /app
+USER node
+EXPOSE 3000
+CMD [ "node", "./index.js" ]
