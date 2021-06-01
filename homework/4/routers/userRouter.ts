@@ -46,7 +46,7 @@ userRouter.get('/users/:id', async (req, res) => {
 
 })
 
-userRouter.get('/getAutoSuggestGroups', async (req, res) => {
+userRouter.get('/getAutoSuggestUsers', async (req, res) => {
     const userEntities = await userService.getUsers();
     console.log('Load users from DB to memory', userEntities);
 

@@ -6,12 +6,16 @@
     DataType,
     CreatedAt,
     UpdatedAt,
+    BelongsToMany
 } from 'sequelize-typescript';
 
+import UserGroup from './userGroup';
+import Group from './group';
+
 @Table({
-    tableName: 'users',
+    tableName: 'user',
 })
-export default class userDalEntity extends Model {
+export default class User extends Model {
     @Column({
         type: DataType.STRING,
         defaultValue: DataType.STRING,
@@ -31,6 +35,9 @@ export default class userDalEntity extends Model {
 
     @Column
     isDeleted!: boolean;
+
+    @BelongsToMany(() => Group, () => UserGroup)
+    groups!: Group[]
 
     @CreatedAt
     @Column({ field: 'created_at' })

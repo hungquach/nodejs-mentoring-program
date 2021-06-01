@@ -23,11 +23,11 @@ export default class UserService  {
     }
 
     async updateUser(userEntity: UserDomainEntity) {
-        await this.userRepository.updateUser(userEntity);
+        await this.userRepository.update(userEntity);
     }
 
     async addUser(userEntity: UserDomainEntity) {
         console.log("userEntity", userEntity);
-        await this.userRepository.addUser(userEntity);
+        await this.userRepository.add(userEntity);
     }
 }

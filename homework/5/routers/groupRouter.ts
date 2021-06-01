@@ -1,36 +1,38 @@
 import express from 'express';
 import joi from 'joi';
-import UserService from '../services/userService';
+import GroupService from '../services/groupService';
 import Utils from '../services/utils';
 import logger from '../logger';
 
 const utils = new Utils();
 
-const userRouter = express.Router();
+const groupRouter = express.Router();
 
 // Services
-const userService = new UserService();
+const groupService = new GroupService();
 
-const userSchema = joi.object().keys({
-    id: joi.required(),
-    login: joi.string().required(),
-    password: joi.string().required().regex(/^(?:[0-9]+[a-z]|[a-z]+[0-9])[a-zA-Z0-9]*$/),
-    age: joi.number().integer().required().min(4).max(130),
-    isDeleted: joi.bool().required(),
-    groupIds: joi.array().required(),
+const groupSchema = joi.object().keys({
+    id: joi.string(),
+    name: joi.string().required(),
+    permissions: joi.array(),
+    userIds: joi.array().required()
 })
 
-userRouter.get('/users', async (req, res) => {
+const groupUsersSchema = joi.object().keys({
+    userIds: joi.array().required()
+})
+
+groupRouter.get('/groups', async (req, res) => {
     try {
-        const userEntities = await userService.getUsers();
+        const userEntities = await groupService.getGroups();
 
         console.log('Get all users from DB', userEntities);
 
         const { order = 'asc' } = req.query
 
         return (order === 'asc') ? res.json(userEntities) : res.json(userEntities.reverse())
-
-    } catch (error) {
+    }
+    catch (error) {
         logger.error('Method: ' + req.method);
         logger.error('Request query: ' + JSON.stringify(req.query));
         logger.error('Request params: ' + JSON.stringify(req.params));
@@ -38,22 +40,23 @@ userRouter.get('/users', async (req, res) => {
         logger.error('Message: ' + error);
         throw error;
     }
+
 })
 
-userRouter.get('/users/:id', async (req, res) => {
+groupRouter.get('/groups/:id', async (req, res) => {
     try {
         const { id } = req.params
-        console.log(`Get user by id ${id}`)
+        console.log(`Get group by id ${id}`)
 
-        const user = await userService.getUserById(id);
+        const group = await groupService.getGroupById(id);
 
-        if (user === undefined || user === null) {
-            const message = `User with id ${id} not found`;
+        if (group === undefined || group === null) {
+            const message = `Group with id ${id} not found`;
             console.error(message)
             res.status(404).json({ message: message })
         } else {
-            console.log(`User with id ${id}: `, user)
-            res.json(user)
+            console.log(`Group with id ${id}: `, group)
+            res.json(group)
         }
     } catch (error) {
         logger.error('Method: ' + req.method);
@@ -65,16 +68,16 @@ userRouter.get('/users/:id', async (req, res) => {
     }
 })
 
-userRouter.get('/getAutoSuggestUsers', async (req, res) => {
+groupRouter.get('/getAutoSuggestGroups', async (req, res) => {
     try {
-        const userEntities = await userService.getUsers();
-        console.log('Load users from DB to memory', userEntities);
+        const groupEntities = await groupService.getGroups();
+        console.log('Load groups from DB to memory', groupEntities);
 
         const { loginSubstring = '', limit = 10 } = req.query
 
-        let filteredUsers = userEntities.filter(user => user.login.includes(loginSubstring as string)).sort((a: any, b: any) => b.login - a.login).slice(0, limit as number)
+        let filteredGroups = groupEntities.filter(group => group.name.includes(loginSubstring as string)).sort((a: any, b: any) => b.login - a.login).slice(0, limit as number)
 
-        return res.json(filteredUsers)
+        return res.json(filteredGroups);
     } catch (error) {
         logger.error('Method: ' + req.method);
         logger.error('Request query: ' + JSON.stringify(req.query));
@@ -85,12 +88,11 @@ userRouter.get('/getAutoSuggestUsers', async (req, res) => {
     }
 })
 
-userRouter.post('/users', utils.validateSchema(userSchema), async (req, res) => {
+groupRouter.post('/groups', utils.validateSchema(groupSchema), async (req, res) => {
     try {
-        const user = req.body
-        await userService.addUser(user);
+        const group = req.body
+        await groupService.addGroup(group);
         res.json({});
-
     } catch (error) {
         logger.error('Method: ' + req.method);
         logger.error('Request query: ' + JSON.stringify(req.query));
@@ -101,24 +103,41 @@ userRouter.post('/users', utils.validateSchema(userSchema), async (req, res) => 
     }
 })
 
-userRouter.put('/users/:id', utils.validateSchema(userSchema), async (req, res) => {
+groupRouter.post('/groups/:id/users', utils.validateSchema(groupUsersSchema), async (req, res) => {
     try {
         const { id } = req.params
-        let userReq = req.body;
+        const { userIds } = req.body
+        await groupService.addUsersToGroup(id, userIds);
+        res.json({});
+    } catch (error) {
+        logger.error('Method: ' + req.method);
+        logger.error('Request query: ' + JSON.stringify(req.query));
+        logger.error('Request params: ' + JSON.stringify(req.params));
+        logger.error('Request body: ' + JSON.stringify(req.body));
+        logger.error('Message: ' + error);
+        throw error;
+    }
+})
 
-        console.log(`Updating user with ${id}`)
-        console.log('User request data: ', userReq)
 
-        userReq.id = id;
+groupRouter.put('/groups/:id', utils.validateSchema(groupSchema), async (req, res) => {
+    try {
+        const { id } = req.params
+        let groupReq = req.body;
 
-        let user = userService.getUserById(id);
-        if (user === undefined || user === null) {
-            const message = `User with id ${id} not found`;
+        console.log(`Updating group with ${id}`)
+        console.log('Group request data: ', groupReq)
+
+        groupReq.id = id;
+
+        let group = groupService.getGroupById(id);
+        if (group === undefined || group === null) {
+            const message = `Group with id ${id} not found`;
             console.error(message);
             res.status(404).json({ message: message });
         } else {
-            await userService.updateUser(userReq);
-            console.log(`Updated user with ${id}: `);
+            await groupService.updateGroup(groupReq);
+            console.log(`Updated group with ${id}: `);
             res.json();
         }
     } catch (error) {
@@ -131,19 +150,19 @@ userRouter.put('/users/:id', utils.validateSchema(userSchema), async (req, res) 
     }
 })
 
-userRouter.delete('/users/:id', async (req, res) => {
+groupRouter.delete('/groups/:id', async (req, res) => {
     try {
         const { id } = req.params
-        console.log(`Deleting user with ${id}`)
+        console.log(`Deleting group with ${id}`)
 
-        let user = await userService.getUserById(id);
-        if (user === undefined) {
-            const message = `User with id ${id} not found`;
+        let group = await groupService.getGroupById(id);
+        if (group === undefined) {
+            const message = `Group with id ${id} not found`;
             console.error(message)
             res.status(404).json({ message: message })
         } else {
-            userService.deleteUser(id);
-            console.log(`Deleted user with ${id}: `)
+            groupService.deleteGroup(id);
+            console.log(`Deleted group with ${id}: `)
             res.json()
         }
     } catch (error) {
@@ -156,4 +175,4 @@ userRouter.delete('/users/:id', async (req, res) => {
     }
 })
 
-export default userRouter
+export default groupRouter

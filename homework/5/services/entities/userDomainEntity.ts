@@ -3,5 +3,7 @@ export default interface userDomainEntity {
     login: string,
     password: string,
     age: number,
-    isDeleted: boolean
+    isDeleted: boolean,
+    groups: string[],
+    groupIds: string[]
 }
